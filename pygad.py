@@ -634,10 +634,20 @@ class GA:
 
         # Initialization for data parameters for fitness function
         self.fitness_function_extra_data_set = False
-        if not desired_output.empty and not function_inputs.empty:
-            self.fitness_function_extra_data_set = True
-            self.desired_output = desired_output
-            self.function_inputs = function_inputs
+        try:
+            if not desired_output.empty and not function_inputs.empty:
+                self.fitness_function_extra_data_set = True
+                self.desired_output = desired_output
+                self.function_inputs = function_inputs
+        except:
+            pass
+        try:
+            if desired_output.size > 0 and function_inputs.size > 0:
+                self.fitness_function_extra_data_set = True
+                self.desired_output = desired_output
+                self.function_inputs = function_inputs
+        except:
+            pass
 
         # Check if the fitness_func is a function.
         if callable(fitness_func):

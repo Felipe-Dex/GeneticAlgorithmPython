@@ -50,7 +50,8 @@ class GA:
                  stop_criteria=None,
                  # Initialization for data parameters on fitness function
                  desired_output=None,
-                 function_inputs=None
+                 function_inputs=None,
+                 auxiliary_data=None
                  ):
 
         """
@@ -633,19 +634,25 @@ class GA:
             self.num_offspring = self.sol_per_pop - self.keep_parents
 
         # Initialization for data parameters for fitness function
-        self.fitness_function_extra_data_set = False
+        self.fitness_function_extra_data_set = 0  # no extra data
         try:
             if not desired_output.empty and not function_inputs.empty:
-                self.fitness_function_extra_data_set = True
+                self.fitness_function_extra_data_set = 1
                 self.desired_output = desired_output
                 self.function_inputs = function_inputs
+                if not auxiliary_data.empty:
+                    self.auxiliary_data = auxiliary_data
+                    self.fitness_function_extra_data_set = 2
         except:
             pass
         try:
             if desired_output.size > 0 and function_inputs.size > 0:
-                self.fitness_function_extra_data_set = True
+                self.fitness_function_extra_data_set = 1
+                if auxiliary_data:
+                    self.fitness_function_extra_data_set = 2
                 self.desired_output = desired_output
                 self.function_inputs = function_inputs
+                self.auxiliary_data = auxiliary_data
         except:
             pass
 
@@ -654,14 +661,18 @@ class GA:
             # Check if the fitness function accepts 2 paramaters.
             if (fitness_func.__code__.co_argcount == 2):
                 self.fitness_func = fitness_func
-            elif self.fitness_function_extra_data_set and (fitness_func.__code__.co_argcount == 4):
+            elif self.fitness_function_extra_data_set == 1 and (fitness_func.__code__.co_argcount == 4):
+                self.fitness_func = fitness_func
+            elif self.fitness_function_extra_data_set == 2 and (fitness_func.__code__.co_argcount == 5):
                 self.fitness_func = fitness_func
             else:
                 self.valid_parameters = False
-                if not self.fitness_function_extra_data_set:
+                if self.fitness_function_extra_data_set == 0:
                     raise ValueError("The fitness function must accept 2 parameters:\n1) A solution to calculate its fitness value.\n2) The solution's index within the population.\n\nThe passed fitness function named '{funcname}' accepts {argcount} parameter(s).".format(funcname=fitness_func.__code__.co_name, argcount=fitness_func.__code__.co_argcount))
-                else:
+                elif self.fitness_function_extra_data_set == 1:
                     raise ValueError("The fitness function with extra_data must accept 4 parameters:\n1) A solution to calculate its fitness value.\n2) The solution's index within the population\n3) The desired output.\n4) The function input\n\nThe passed fitness function named '{funcname}' accepts {argcount} parameter(s).".format(funcname=fitness_func.__code__.co_name, argcount=fitness_func.__code__.co_argcount))
+                elif self.fitness_function_extra_data_set == 2:
+                    raise ValueError("The fitness function with extra_data and auxiliary data must accept 5 parameters:\n1) A solution to calculate its fitness value.\n2) The solution's index within the population\n3) The desired output.\n4) The function input\n\nThe passed fitness function named '{funcname}' accepts {argcount} parameter(s).".format(funcname=fitness_func.__code__.co_name, argcount=fitness_func.__code__.co_argcount))
         else:
             self.valid_parameters = False
             raise ValueError("The value assigned to the fitness_func parameter is expected to be of type function but ({fitness_func_type}) found.".format(fitness_func_type=type(fitness_func)))
@@ -1182,10 +1193,14 @@ class GA:
                 # Use the parent's index to return its pre-calculated fitness value.
                 fitness = self.previous_generation_fitness[parent_idx]
             else:
-                if not self.fitness_function_extra_data_set:
+                fitness = 0
+                if self.fitness_function_extra_data_set == 0:
                     fitness = self.fitness_func(sol, sol_idx)
-                else:
+                elif self.fitness_function_extra_data_set == 1:
                     fitness = self.fitness_func(sol, sol_idx, self.desired_output, self.function_inputs)
+                elif self.fitness_function_extra_data_set == 2:
+                    fitness = self.fitness_func(sol, sol_idx, self.desired_output, self.function_inputs, self.auxiliary_data)
+
                 if type(fitness) in GA.supported_int_float_types:
                     pass
                 else:

@@ -4,6 +4,8 @@ import matplotlib.pyplot
 import pickle
 import time
 import warnings
+from multiprocessing import Process, Queue
+
 
 class GA:
 
@@ -648,7 +650,7 @@ class GA:
         try:
             if desired_output.size > 0 and function_inputs.size > 0:
                 self.fitness_function_extra_data_set = 1
-                if auxiliary_data:
+                if not self.test_numpy_array_empty(auxiliary_data):
                     self.fitness_function_extra_data_set = 2
                 self.desired_output = desired_output
                 self.function_inputs = function_inputs
@@ -937,6 +939,31 @@ class GA:
         self.last_generation_offspring_crossover = None # A list holding the offspring after applying crossover in the last generation.
         self.last_generation_offspring_mutation = None # A list holding the offspring after applying mutation in the last generation.
         self.previous_generation_fitness = None # Holds the fitness values of one generation before the fitness values saved in the last_generation_fitness attribute. Added in PyGAD 2.26.2
+
+    @staticmethod
+    def test_numpy_array_empty(np_array):
+        is_empty = False
+        test_performed = True
+        try:
+            if np_array:
+                is_empty = False
+            else:
+                is_empty = True
+        except:
+            test_performed = False
+
+        if not test_performed:
+            test_performed = True
+            try:
+                if np_array.size == 0:
+                    is_empty = True
+                else:
+                    is_empty = False
+            except:
+                is_empty = True
+                test_performed = False
+
+        return is_empty
 
     def round_genes(self, solutions):
         for gene_idx in range(self.num_genes):
